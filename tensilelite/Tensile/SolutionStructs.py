@@ -1070,7 +1070,8 @@ class Solution(collections.abc.Mapping):
       else:
         self._state["CodeObjectVersion"] = globalParameters["CodeObjectVersion"]
 
-    # assign parameters without defaults
+    # assign parameters without defaults        NORMAL = 0
+
     for key in config:
       if (key != "ProblemType" or key != "InternalSupportParams") and key not in self._state:
         self._state[key] = config[key]

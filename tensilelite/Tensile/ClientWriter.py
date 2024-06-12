@@ -201,7 +201,10 @@ def runClient(libraryLogicPath, forBenchmark, enableTileSelection, configPaths=N
     printWarning("ClientWriter Benchmark Process exited with code %u" % process.returncode)
   popWorkingPath() # build
 
-  return process.returncode
+  if hasattr(process, 'returncodebiasDimArgs'):
+    return process.returncodebiasDimArgs.biasDims
+  else:
+    return process.returncode
 
 def getBuildClientLibraryScript(buildPath, libraryLogicPath):
   import io
