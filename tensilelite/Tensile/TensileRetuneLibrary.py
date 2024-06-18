@@ -31,6 +31,8 @@ from . import Common
 from .Common import globalParameters, print1, printWarning, ensurePath, assignGlobalParameters, \
                     pushWorkingPath, popWorkingPath, restoreDefaultGlobalParameters, HR
 from .Tensile import addCommonArguments, argUpdatedGlobalParameters
+from .TensileInstructions import DataType
+from .Activation import ActivationType
 from .SolutionStructs import ProblemSizes, ActivationArgs, BiasTypeArgs, \
         BiasDimArgs
 from . import __version__
@@ -73,6 +75,8 @@ def parseCurrentLibrary(libPath, sizePath):
 def runBenchmarking(problemType, solutions, problemSizes, outPath, update):
     # TODO some copy-pasting from BenchmarkProblems.benchmarkProblemType
     # could use a refactor to elimate duplicated code
+    
+    
     ClientExecutable.getClientExecutable()
 
     shortName = "benchmark"
@@ -99,7 +103,8 @@ def runBenchmarking(problemType, solutions, problemSizes, outPath, update):
     #problemType = solutions.problemType
     
     
-    
+
+    #$globalParameters['BiasTypeInputArgs'] = args.biastype_list
     if ("UseBias" in problemType) & (problemType["UseBias"] == 0):
         biasTypeArgs  = BiasTypeArgs(problemType, "")
         #activationArgs = ActivationArgs(problemType, "")
@@ -108,16 +113,25 @@ def runBenchmarking(problemType, solutions, problemSizes, outPath, update):
         #biasDataType = problemType["BiasDataTypeList"] if "BiasDataTypeList" in problemType #\
             
         # error if Data type list not in problem type for retune lib
-        biasDataType = problemType["BiasDataTypeList"]
-            #else [DataType(problemTypedt) for dt in ["DataType"]
+        
+        if globalParameters['BiasTypeInputArgs']:
+            biasDataType = globalParameters['BiasTypeInputArgs']
+        else:
+            biasDataType = problemType["BiasDataTypeList"]
+                #else [DataType(problemTypedt) for dt in ["DataType"]
         biasTypeArgs  = BiasTypeArgs(problemType, biasDataType)
-        #activationArgs = ActivationArgs(problemType, "")
+            #activationArgs = ActivationArgs(problemType, "")
+        
         biasDimArgs  = BiasDimArgs(problemType, "")
     
+#        globalParameters['ActivationInputArgs'] = args.activation_enums
     if ("Activation" in problemType) & (problemType["Activation"] == 0):
         activationArgs = ActivationArgs(problemType, "")
     else:
-        settings = [[{"Enum": "relu"}]]
+        if globalParameters['ActivationInputArgs']:
+            settings = globalParameters['ActivationInputArgs']
+        else:
+            settings = [[{"Enum": "relu"}]]
         activationArgs = ActivationArgs(problemType, settings)
     #def writeBenchmarkFiles(stepBaseDir, solutions, problemSizes, \
     #    biasTypeArgs, biasDimArgs, activationArgs, stepName, solutionSummationSizes):
@@ -147,6 +161,20 @@ def runBenchmarking(problemType, solutions, problemSizes, outPath, update):
     shutil.copy(os.path.join(resultsDir, "benchmark.yaml"), os.path.join(out, "benchmark.yaml"))
 
 
+def list_of_activations(arg):
+    
+    #activation_list = [ActivationType(value) for value in arg.split(',')
+    activation_settings = [{"Enum": value for value in arg.split(',')}]
+    return [activation_settings]
+    
+    #return arg.split(',')
+
+def list_of_biastypes(arg):
+    
+    bias_datatype_list = [DataType(value) for value in arg.split(',')]
+    
+    return bias_datatype_list
+
 def TensileRetuneLibrary(userArgs):
     print1("")
     print1(HR)
@@ -167,8 +195,12 @@ def TensileRetuneLibrary(userArgs):
     argParser.add_argument("--update-method", "-u", dest="updateMethod",
                            choices=["remake", "update", "both"], default="remake",
                            help="Method for making new library logic file")
+    
+    argParser.add_argument("--activation-enums", type=list_of_activations)
+    argParser.add_argument("--biastype-list", type=list_of_biastypes)
 
     addCommonArguments(argParser)
+    
     args = argParser.parse_args(userArgs)
 
     libPath = args.LogicFile
@@ -177,6 +209,7 @@ def TensileRetuneLibrary(userArgs):
     print1("#")
     print1(HR)
     print1("")
+    
 
     if args.updateMethod == "remake":
         update = False
@@ -202,6 +235,15 @@ def TensileRetuneLibrary(userArgs):
         print1("Overriding {0}={1}".format(key, value))
         Common.globalParameters[key] = value
 
+
+    #argParser.add_argument("--activation_enums", type=list_of_activations)
+    #argParser.add_argument("--biastype_list", type=list_of_biastypes)
+
+    globalParameters['ActivationInputArgs'] = args.activation_enums
+    globalParameters['BiasTypeInputArgs'] = args.biastype_list
+
+        
+    #globalParameters
     # parse library logic then setup and run benchmarks
     (rawYaml, problemType, solutions, problemSizes) = parseCurrentLibrary(libPath, sizePath)
     runBenchmarking(problemType, solutions, problemSizes, outPath, update)
