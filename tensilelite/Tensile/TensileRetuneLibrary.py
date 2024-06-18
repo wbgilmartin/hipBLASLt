@@ -164,7 +164,7 @@ def runBenchmarking(problemType, solutions, problemSizes, outPath, update):
 def list_of_activations(arg):
     
     #activation_list = [ActivationType(value) for value in arg.split(',')
-    activation_settings = [{"Enum": value for value in arg.split(',')}]
+    activation_settings = [{"Enum": value} for value in arg.split(',')]
     return [activation_settings]
     
     #return arg.split(',')
